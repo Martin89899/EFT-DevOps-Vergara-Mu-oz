@@ -84,16 +84,21 @@ jobs:
       run: |
         aws ecs describe-task-definition --task-definition eft-task --query taskDefinition > task-definition.json
 
-    # 3. Actualizar la definición de la tarea para usar la nueva imagen que se acaba de compilar
+    # 3. ELIMINAR EL PARÁMETRO CONFLICTIVO CON JQ
+    - name: Remover clave conflictiva para ECS
+      run: |
+        jq 'del(.enableFaultInjection)' task-definition.json > clean-task-definition.json
+
+    # 4. Actualizar la definición de la tarea para usar la nueva imagen limpia
     - name: Actualizar URI de la imagen en la Task Definition
       id: render-task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: task-definition.json
+        task-definition: clean-task-definition.json
         container-name: eft-container
         image: ${{ secrets.DOCKERHUB_USERNAME }}/eft-backend:latest
 
-    # 4. Desplegar de verdad en el servicio Express de tu clúster "default"
+    # 5. Desplegar de verdad en el servicio Express de tu clúster "default"
     - name: Desplegar nueva versión en AWS ECS
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
