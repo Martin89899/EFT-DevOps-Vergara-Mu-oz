@@ -1,0 +1,74 @@
+name: CI/CD Pipeline - EFT DevOps
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout del código fuente
+      uses: actions/checkout@v3
+
+    # --- ETAPA DE CONFIGURACIÓN Y TEST ---
+    - name: Configurar entorno de Node.js (Test)
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: './backJs/package-lock.json'
+
+    - name: Instalar Dependencias del Backend Node.js
+      run: |
+        cd backJs
+        npm ci
+
+    # --- ETAPA DE AUTENTICACIÓN EN EL REGISTRO ---
+    - name: Iniciar sesión en Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # --- ETAPA DE EMPAQUETADO Y PUBLICACIÓN (BUILD & PUSH) ---
+    - name: Construir y Publicar Imagen del Backend Node.js
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backJs
+        file: ./backJs/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/eft-backend:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/eft-backend:${{ github.sha }}
+
+    - name: Construir y Publicar Imagen del Frontend
+      uses: docker/build-push-action@v4
+      with:
+        context: ./Front
+        file: ./Front/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/eft-frontend:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/eft-frontend:${{ github.sha }}
+
+    - name: Construir y Publicar Imagen del Backend Python
+      uses: docker/build-push-action@v4
+      with:
+        context: ./BackPy
+        file: ./BackPy/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/eft-backend-python:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/eft-backend-python:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+    - name: Simulación de Despliegue en la Nube
+      run: |
+        echo "Desplegando versión de las imágenes con tag: ${{ github.sha }}"
+        echo "Conectando al clúster de orquestación mediante Secrets..."
+        echo "¡Despliegue automatizado completado con éxito!"

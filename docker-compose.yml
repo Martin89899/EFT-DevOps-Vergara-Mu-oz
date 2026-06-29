@@ -21,9 +21,9 @@ services:
       retries: 5
 
   # Backend API Node.js (Corregido al puerto 8081)
-  backend:
+  backJs:
     build:
-      context: ./backend
+      context: ./backJs
       dockerfile: Dockerfile
     container_name: backend-api
     restart: unless-stopped
@@ -44,9 +44,9 @@ services:
       - frontend-net
 
   # Frontend Nginx
-  frontend:
+  Front:
     build:
-      context: ./frontend
+      context: ./Front
       dockerfile: Dockerfile
     container_name: frontend-nginx
     restart: unless-stopped
@@ -55,7 +55,29 @@ services:
     networks:
       - frontend-net
     depends_on:
-      - backend
+      - backJs
+
+  # Backend API Python Flask
+  BackPy:
+    build:
+      context: ./BackPy
+      dockerfile: Dockerfile
+    container_name: backend-python
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+      DB_NAME: products_db
+    ports:
+      - "8082:8082"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - frontend-net
 
 # Volúmenes persistentes
 volumes:
