@@ -1,28 +1,26 @@
+# Usar imagen liviana oficial de Node.js (Alpine ya incluye el usuario 'node')
 FROM node:18-alpine
 
+# Definir el directorio de trabajo de la aplicación
 WORKDIR /app
 
-# Copiar package files
+# Copiar archivos de dependencias de Node
 COPY package*.json ./
 
-# Instalar solo dependencias de producción
+# Instalar solo dependencias de producción para mantener la imagen ligera
 RUN npm ci --only=production
 
-# Copiar código fuente
+# Copiar el resto del código fuente del backend
 COPY . .
 
-# Crear usuario sin privilegios
-RUN addgroup -g 1001 -S node && \
-    adduser -S node -u 1001
-
-# Cambiar propietario del directorio de trabajo
+# Asegurar los permisos del directorio para el usuario existente 'node'
 RUN chown -R node:node /app
 
-# Cambiar a usuario sin privilegios
+# 🔒 USAR EL USUARIO SIN PRIVILEGIOS INTEGRADO (Principio de mínimo privilegio)
 USER node
 
-# Exponer puerto del servidor
-EXPOSE 3000
+#  Exponer el puerto oficial solicitado en la pauta (8081)
+EXPOSE 8081
 
-# Iniciar aplicación
+# Comando para iniciar la API de Node.js
 CMD ["node", "server.js"]
