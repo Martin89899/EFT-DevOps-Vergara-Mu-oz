@@ -67,8 +67,37 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-    - name: Simulación de Despliegue en la Nube
+    - name: Checkout del código fuente
+      uses: actions/checkout@v3
+
+    # 1. Autenticar de forma real en tu AWS Learner Lab usando tus Secretos
+    - name: Configurar credenciales de AWS
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: us-east-1
+
+    # 2. Descargar la definición de tarea que creamos en la consola de AWS
+    - name: Descargar Task Definition activa de AWS
       run: |
-        echo "Desplegando versión de las imágenes con tag: ${{ github.sha }}"
-        echo "Conectando al clúster de orquestación mediante Secrets..."
-        echo "¡Despliegue automatizado completado con éxito!"
+        aws ecs describe-task-definition --task-definition eft-task --query taskDefinition > task-definition.json
+
+    # 3. Actualizar la definición de la tarea para usar la nueva imagen que se acaba de compilar
+    - name: Actualizar URI de la imagen en la Task Definition
+      id: render-task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition.json
+        container-name: eft-container
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/eft-backend:latest
+
+    # 4. Desplegar de verdad en el servicio Express de tu clúster "default"
+    - name: Desplegar nueva versión en AWS ECS
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+        service: nginx-98c0
+        cluster: default
+        wait-for-service-stability: false
