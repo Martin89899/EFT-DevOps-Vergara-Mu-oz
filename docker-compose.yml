@@ -20,8 +20,9 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API Node.js (Corregido al puerto 8081)
+  # Backend API Node.js
   backJs:
+    image: eft-backjs-local:latest  # <-- CORRECCIÓN: Fuerza nombre en minúsculas
     build:
       context: ./backJs
       dockerfile: Dockerfile
@@ -45,6 +46,7 @@ services:
 
   # Frontend Nginx
   Front:
+    image: eft-front-local:latest  # <-- CORRECCIÓN: Fuerza nombre en minúsculas
     build:
       context: ./Front
       dockerfile: Dockerfile
@@ -59,6 +61,7 @@ services:
 
   # Backend API Python Flask
   BackPy:
+    image: eft-backpy-local:latest  # <-- CORRECCIÓN: Fuerza nombre en minúsculas
     build:
       context: ./BackPy
       dockerfile: Dockerfile
@@ -84,7 +87,7 @@ volumes:
   mysql-data:
     driver: local
 
-# Redes aisladas aplicando principio de mínimo privilegio
+# Redes aisladas
 networks:
   frontend-net:
     driver: bridge
